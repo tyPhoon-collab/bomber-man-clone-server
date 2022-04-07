@@ -4,7 +4,7 @@ const http = require('http');
 const socketIO = require('socket.io');
 const server = http.Server(app);
 const io = socketIO(server);
-const port = 80;
+const port = 8080;
 
 app.use(express.static("public"));
 
@@ -650,7 +650,7 @@ io.on("connection", (socket) => {
     });
 });
 
-server.listen(port, () => {
+server.listen(process.env.PORT || port, () => {
     console.log("started");
 });
 
