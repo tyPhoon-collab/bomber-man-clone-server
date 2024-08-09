@@ -221,7 +221,7 @@ async function loadAudios() {
     FIRE_SE = await loadAudio("assets/SE/爆発3.mp3", 0.5, false);
     ITEM_SE = await loadAudio("assets/SE/パワーアップ.mp3", 0.5, false);
     DEAD_SE = await loadAudio("assets/SE/K.O..mp3", 0.5, false);
-    BGM01 = await loadAudio("assets/BGM/BGM02.wav", bgm_vol, true);
+    BGM01 = await loadAudio("assets/BGM/BGM02.mp3", bgm_vol, true);
 
     SEs = [FIRE_SE, ITEM_SE, DEAD_SE];
 

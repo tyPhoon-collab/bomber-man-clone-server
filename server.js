@@ -13,6 +13,7 @@ const io = require('socket.io')(server, {
 const port = 8080;
 
 app.use(cors());
+app.use(express.static("public"));
 app.options('*', cors());
 
 //////global変数//////
