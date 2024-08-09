@@ -1,13 +1,19 @@
 const express = require('express');
 const app = express();
+const cors = require('cors')
 const http = require('http');
-const socketIO = require('socket.io');
 const server = http.Server(app);
-const io = socketIO(server);
+const io = require('socket.io')(server, {
+    cors: {
+        origin: "*", // TODO: 本番環境に合わせて修正
+        methods: ["GET", "POST"],
+        credentials: true
+    }
+});;
 const port = 8080;
 
-app.use(express.static("public"));
-
+app.use(cors());
+app.options('*', cors());
 
 //////global変数//////
 const THICKNESS_LENGTH = 3;
@@ -59,13 +65,13 @@ const init_middle_minJ = 5;
 
 const CHRS_POSITIONS = [
     {
-        x: SIZE_WALL, 
-        y: 0, 
+        x: SIZE_WALL,
+        y: 0,
         z: -SIZE_WALL
     },
     {
-        x: SIZE_WALL * (WIDTH_LENGTH - 2), 
-        y: 0, 
+        x: SIZE_WALL * (WIDTH_LENGTH - 2),
+        y: 0,
         z: -SIZE_WALL * (HEIGHT_LENGTH - 2)
     },
     {
@@ -103,7 +109,7 @@ const CHRS_POSITIONS = [
 let is_used_chrsPos = new Array(CHRS_POSITIONS.length).fill(false);
 
 class Bomb {
-    constructor (index, len) {
+    constructor(index, len) {
         this.index = index;
         this.indexs = [];
         this.item_indexs = [];
@@ -111,7 +117,7 @@ class Bomb {
         this.id = bombID++;
         this.objID = null;
         this.timeoutID = setTimeout(Bomb.explosion.bind(this), explosionTime);
-        
+
         this.intervalID = null;
 
         set_field([this.index], BOMB_NUM);
@@ -126,14 +132,14 @@ class Bomb {
         let {h, i, j} = this.index;
         FIELD_BOMB[h][i][j] = 0;
         this.indexs.push(this.index);
-    
-        for (let w = -1; w <= 1; w+=2) {
+
+        for (let w = -1; w <= 1; w += 2) {
             for (let n = 1; n <= this.fireLen; n++) {
-                if (this.push_fireIndex(h, i + w*n, j)) break;
+                if (this.push_fireIndex(h, i + w * n, j)) break;
             }
-            
+
             for (let n = 1; n <= this.fireLen; n++) {
-                if (this.push_fireIndex(h, i, j + w*n)) break;
+                if (this.push_fireIndex(h, i, j + w * n)) break;
             }
         }
 
@@ -142,12 +148,12 @@ class Bomb {
         if (this.objID != null) {
             delete moving_bombs[this.objID];
         }
-        
+
         set_field(this.indexs, 0);
         for (const iindex of this.item_indexs) {
             set_field(
                 [iindex],
-                -Math.floor(Math.random()*(ITEM_NUM) + 1)    
+                -Math.floor(Math.random() * (ITEM_NUM) + 1)
             );
         }
 
@@ -157,9 +163,9 @@ class Bomb {
             delete fire_indexs[this.id];
         }, explosionRemainTime);
     }
-    
+
     push_fireIndex(h, i, j) {
-        if (h < 1 || i < 1 || j < 1 || h >= THICKNESS_LENGTH || i >= HEIGHT_LENGTH-1 || j >= WIDTH_LENGTH-1) { 
+        if (h < 1 || i < 1 || j < 1 || h >= THICKNESS_LENGTH || i >= HEIGHT_LENGTH - 1 || j >= WIDTH_LENGTH - 1) {
             //console.log(`範囲外です。-> h=${h}, i=${i}, j=${j}`);
             return true;
         }
@@ -171,43 +177,43 @@ class Bomb {
             return true;
 
         } else if (num == BLOCK_NUM) {
-            this.indexs.push(toIndex(h,i,j));
+            this.indexs.push(toIndex(h, i, j));
             if (Math.random() <= ITEM_RANDOM) {
-                this.item_indexs.push(toIndex(h,i,j));
+                this.item_indexs.push(toIndex(h, i, j));
             } return true;
-        
+
         } else if (bomb != 0) {
             Bomb.explosion.bind(bomb)();
             return false;
-        
-        } else { 
-            this.indexs.push(toIndex(h,i,j));
+
+        } else {
+            this.indexs.push(toIndex(h, i, j));
             return false;
         }
     }
 
-    update_index(rate, dir, times=0, distance=rate) {
-        let time = distance/rate; //着地するまでの時間
+    update_index(rate, dir, times = 0, distance = rate) {
+        let time = distance / rate; //着地するまでの時間
         const {h, i, j} = this.index;
         const {x, y, z} = dir;
         if (times < time) {
             this.setIndex = toIndex(
-                h + y*rate - (2*y*rate/time)*times, 
-                i + -z*rate,
-                j + x*rate
+                h + y * rate - (2 * y * rate / time) * times,
+                i + -z * rate,
+                j + x * rate
             );
             this.apply_loop();
         } else {
             return true;
         }
     }
-    
+
     apply_loop() {
         let {h, i, j} = this.index;
-        if (i < 0) i = HEIGHT_LENGTH-1;
-        else if (i > HEIGHT_LENGTH-1) i = 0;
-        if (j < 0) j = WIDTH_LENGTH-1;
-        else if (j > WIDTH_LENGTH-1) j = 0;
+        if (i < 0) i = HEIGHT_LENGTH - 1;
+        else if (i > HEIGHT_LENGTH - 1) i = 0;
+        if (j < 0) j = WIDTH_LENGTH - 1;
+        else if (j > WIDTH_LENGTH - 1) j = 0;
 
         if (this.index.i != i || this.index.j != j) {
             this.setIndex = toIndex(h, i, j);
@@ -233,13 +239,13 @@ class Bomb {
 
 class Player {
     //実際、サーバー間でやり取りするのでクラスとしては扱えない。
-    constructor () {
+    constructor() {
         let chrPosIndex = Player.get_chrPos_index();
 
         this.posIndex = chrPosIndex;
         this.pos = CHRS_POSITIONS[chrPosIndex];
         this.status = "idle";
-        this.dir = {x:0, y:0, z:0};
+        this.dir = {x: 0, y: 0, z: 0};
         this.angle = 0;
         this.speed = 400;
         this.fireLen = 2;
@@ -262,16 +268,16 @@ class Player {
 function init_field() {
     FIELD = new Array(THICKNESS_LENGTH);
     for (let h = 0; h < THICKNESS_LENGTH; h++) {
-        FIELD[h] = new Array(HEIGHT_LENGTH);       
-        for(let i = 0; i < HEIGHT_LENGTH; i++){
+        FIELD[h] = new Array(HEIGHT_LENGTH);
+        for (let i = 0; i < HEIGHT_LENGTH; i++) {
             FIELD[h][i] = new Array(WIDTH_LENGTH).fill(0);
         }
     }
 
     FIELD_BOMB = new Array(THICKNESS_LENGTH);
     for (let h = 0; h < THICKNESS_LENGTH; h++) {
-        FIELD_BOMB[h] = new Array(HEIGHT_LENGTH);       
-        for(let i = 0; i < HEIGHT_LENGTH; i++){
+        FIELD_BOMB[h] = new Array(HEIGHT_LENGTH);
+        for (let i = 0; i < HEIGHT_LENGTH; i++) {
             FIELD_BOMB[h][i] = new Array(WIDTH_LENGTH).fill(0);
         }
     }
@@ -281,28 +287,28 @@ function init_field() {
         for (let i = 0; i < HEIGHT_LENGTH; i++) {
             for (let j = 0; j < WIDTH_LENGTH; j++) {
                 if (h == 0) { //床
-                    if (i == 1 || j == 1 || i == HEIGHT_LENGTH-2 || j == WIDTH_LENGTH-2) {
+                    if (i == 1 || j == 1 || i == HEIGHT_LENGTH - 2 || j == WIDTH_LENGTH - 2) {
                         FIELD[h][i][j] = FLOOR02_NUM;
                     } else {
                         FIELD[h][i][j] = FLOOR01_NUM;
                     }
-                } else if (h==1) {
-                    if (i == 0 || j == 0 || i == HEIGHT_LENGTH-1 || j == WIDTH_LENGTH-1) { //外壁
+                } else if (h == 1) {
+                    if (i == 0 || j == 0 || i == HEIGHT_LENGTH - 1 || j == WIDTH_LENGTH - 1) { //外壁
                         FIELD[h][i][j] = OUTERWALL_NUM;
                     } else if (i % 2 == 0 && j % 2 == 0) { //偶数インデックスを壁にする
                         FIELD[h][i][j] = WALL_NUM;
                     } else { //確率で壊れるブロックを配置する。
-                        if ((2 < i && i < HEIGHT_LENGTH - 3) || 
+                        if ((2 < i && i < HEIGHT_LENGTH - 3) ||
                             (2 < j && j < WIDTH_LENGTH - 3)
                         ) {
-                            if (!((i == init_middle_minI || i == init_middle_minI+1 || 
-                                   i == HEIGHT_LENGTH - init_middle_minI-1 || 
-                                   i == HEIGHT_LENGTH - init_middle_minI-2) && 
-                                 (j == init_middle_minJ || j == init_middle_minJ+1 || 
-                                  j == WIDTH_LENGTH - init_middle_minJ-1 ||
-                                  j == WIDTH_LENGTH - init_middle_minJ-2)
-                                  )
-                            ){
+                            if (!((i == init_middle_minI || i == init_middle_minI + 1 ||
+                                i == HEIGHT_LENGTH - init_middle_minI - 1 ||
+                                i == HEIGHT_LENGTH - init_middle_minI - 2) &&
+                                (j == init_middle_minJ || j == init_middle_minJ + 1 ||
+                                    j == WIDTH_LENGTH - init_middle_minJ - 1 ||
+                                    j == WIDTH_LENGTH - init_middle_minJ - 2)
+                            )
+                            ) {
                                 if (Math.random() <= BLOCK_RANDOM) {
                                     FIELD[h][i][j] = BLOCK_NUM;
                                 }
@@ -310,9 +316,9 @@ function init_field() {
                         }
                     }
                 }
-            }        
-        }   
-    }    
+            }
+        }
+    }
 }
 
 function set_field(indexs, num) {
@@ -330,7 +336,7 @@ function get_round_index(index) {
     );
 
     if (rindex.h >= THICKNESS_LENGTH) {
-        rindex.h = THICKNESS_LENGTH-1;
+        rindex.h = THICKNESS_LENGTH - 1;
         console.log("index.h is over array");
     }
 
@@ -345,8 +351,8 @@ function get_is_equal(index1, index2) {
     );
 }
 
-function toIndex(h, i ,j) {
-    return {"h":h, "i":i, "j":j};
+function toIndex(h, i, j) {
+    return {"h": h, "i": i, "j": j};
 }
 
 function check_exploze(index, bomb) {
@@ -369,7 +375,7 @@ setInterval(() => {
 io.on("connection", (socket) => {
     chrs[socket.id] = new Player();
 
-    socket.emit("set_value", 
+    socket.emit("set_value",
         THICKNESS_LENGTH,
         HEIGHT_LENGTH,
         WIDTH_LENGTH
@@ -395,24 +401,24 @@ io.on("connection", (socket) => {
 
         //リセットが押されたことを通知、このイベントでクライアント側からのデータの送信を止めてもらう
         io.emit("received-start");
-        
+
         //フィールドの初期化
         init_field();
-        
+
         setTimeout(() => {
             //キャラの初期化
             is_used_chrsPos.fill(false);
             for (const id of Object.keys(chrs)) {
                 chrs[id] = new Player();
             }
-            io.emit("init-info", chrs);      
+            io.emit("init-info", chrs);
             io.emit("field", FIELD);
         }, 800);
     });
 
     socket.on("chr-info", (chrInfo) => {
         chrs[socket.id] = chrInfo;
-        io.emit("chrs-info-update", chrs);        
+        io.emit("chrs-info-update", chrs);
     });
 
     socket.on("got-item", (index) => {
@@ -420,7 +426,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on("bomb", (index) => {
-        const {h,i,j} = index;
+        const {h, i, j} = index;
         FIELD_BOMB[h][i][j] = new Bomb(index, chrs[socket.id].fireLen);
     });
 
@@ -477,7 +483,7 @@ io.on("connection", (socket) => {
                     set_field([bomb.index], BOMB_NUM);
                 }
             }
-            
+
             if (!get_is_equal(bindex, rundIndex)) {
                 set_field([bindex], 0);
                 FIELD_BOMB[bindex.h][bindex.i][bindex.j] = 0;
@@ -490,7 +496,7 @@ io.on("connection", (socket) => {
         }
     });
 
-    socket.on("bomb-stop", id => {        
+    socket.on("bomb-stop", id => {
         const bomb = moving_bombs[id];
         if (bomb != undefined) {
             clearInterval(bomb.intervalID);
@@ -520,15 +526,15 @@ io.on("connection", (socket) => {
         dir.y = 2;
         let times = 0;
         const rate = 0.25; //とりあえず0.25以上にしておいて。
-        
+
         function move_bomb() {
             let is_stopped = false;
-            
+
             if (bomb.update_index(rate, dir, times++, distance)) {
                 let index = get_round_index(bomb.index);
                 let {h, i, j} = index;
                 //もし地面になにも無ければ。。。
-                if (FIELD[h][i][j] <= 0 && 
+                if (FIELD[h][i][j] <= 0 &&
                     (FIELD[h - 1][i][j] <= 0 || FIELD[h - 1][i][j] == BLOCK_NUM)
                 ) {
                     clearInterval(intervalID);
@@ -541,14 +547,14 @@ io.on("connection", (socket) => {
                     set_field([index], BOMB_PUNCHED_NUM);
                     FIELD_BOMB[h][i][j] = bomb;
                     check_exploze(index, bomb);
-                //地面に物があったら引き続きupdate_indexを呼んでもらう
+                    //地面に物があったら引き続きupdate_indexを呼んでもらう
                 } else {
                     times = 0;
                     distance = 1;
                     bomb.index.h = bindex.h;
                 }
             }
-            
+
             io.emit("move-bomb", bindex, bomb.index, id, is_stopped);
         }
     });
@@ -580,7 +586,7 @@ io.on("connection", (socket) => {
             const {pos, angle} = chrs[socket.id];
             const rate = 0.3; //ちょっと前に設置。
             let index = toIndex(
-                pos.y/SIZE_WALL + 1.4, -pos.z/SIZE_WALL - Math.cos(angle)*rate, pos.x/SIZE_WALL + Math.sin(angle)*rate
+                pos.y / SIZE_WALL + 1.4, -pos.z / SIZE_WALL - Math.cos(angle) * rate, pos.x / SIZE_WALL + Math.sin(angle) * rate
             );
             bomb.setIndex = index;
             io.emit("move-bomb", bindex, bomb.index, id);
@@ -592,7 +598,7 @@ io.on("connection", (socket) => {
         let intervalID = null;
         let id = socket.id;
         const bomb = moving_bombs[id];
-        
+
         if (bomb == undefined) {
             //バグ回避。ボムパンチが呼ばれ、ラグで爆発した後にこのイベントが呼ばれた場合に、undefindedになってサーバーが落ちる。
             console.log("already explozed");
@@ -607,15 +613,15 @@ io.on("connection", (socket) => {
         dir.y = 2;
         let times = 0;
         const rate = 0.25; //とりあえず0.25以上にしておいて。
-        
+
         function move_bomb() {
             let is_stopped = false;
-            
+
             if (bomb.update_index(rate, dir, times++, distance)) {
                 let index = get_round_index(bomb.index);
                 let {h, i, j} = index;
                 //もし地面になにも無ければ。。。
-                if (FIELD[h][i][j] <= 0 && 
+                if (FIELD[h][i][j] <= 0 &&
                     (FIELD[h - 1][i][j] <= 0 || FIELD[h - 1][i][j] == BLOCK_NUM)
                 ) {
                     clearInterval(intervalID);
@@ -628,25 +634,25 @@ io.on("connection", (socket) => {
                     set_field([index], BOMB_PUNCHED_NUM);
                     FIELD_BOMB[h][i][j] = bomb;
                     check_exploze(index, bomb);
-                //地面に物があったら引き続きupdate_indexを呼んでもらう
+                    //地面に物があったら引き続きupdate_indexを呼んでもらう
                 } else {
                     times = 0;
                     distance = 1;
                 }
             }
-            
+
             io.emit("move-bomb", null, bomb.index, id, is_stopped);
         }
     });
 
     socket.on("disconnect", () => {
-        if (moving_bombs[socket.id] != undefined) {   
+        if (moving_bombs[socket.id] != undefined) {
             Bomb.explosion.bind(moving_bombs[socket.id])();
         }
 
         is_used_chrsPos[chrs[socket.id].posIndex] = false;
         delete chrs[socket.id];
-        io.emit("init-info", chrs);   
+        io.emit("init-info", chrs);
     });
 });
 

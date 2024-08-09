@@ -1,4 +1,7 @@
-const socket = io();
+// const ENTRYPOINT = "http://localhost:8080";
+const ENTRYPOINT = "https://bomber-man-pw7szx6oxa-an.a.run.app";
+
+const socket = io(ENTRYPOINT);
 
 //ここらへんごちゃごちゃなので後でなおす。
 //やりたいことは、クライアントとサーバーで共通する変数は、片方変えるだけでいいようにすること
@@ -14,7 +17,7 @@ let FIELD_NUM = 0;
 
 const cameraMinDistance = 3000;
 let cameraDistance = cameraMinDistance;
-const cameraAngleX = Math.PI*5/12;
+const cameraAngleX = Math.PI * 5 / 12;
 let cameraPosX = 0;
 let cameraPosY = 0;
 let cameraPosZ = 0;
@@ -51,16 +54,16 @@ const ITEM_HOLD = -6;
 const ITEM_NUM = 6;
 
 const KEY_CODE = {
-    "a":65,
-    "d":68,
-    "h":72,
-    "j":74,
-    "k":75,
-    "l":76,
-    "r":82,
-    "s":83,
-    "w":87,
-    "SPACE":32,
+    "a": 65,
+    "d": 68,
+    "h": 72,
+    "j": 74,
+    "k": 75,
+    "l": 76,
+    "r": 82,
+    "s": 83,
+    "w": 87,
+    "SPACE": 32,
 };
 
 const dirLightIntensity = 0.9;
@@ -68,7 +71,7 @@ const explosionTime = 3000;
 const explosionRemainTime = 800;
 const stanTime = 1000;
 const easing_num = 0.02;
-let bgm_vol= 0.8;
+let bgm_vol = 0.8;
 
 let statsDisplay = null;
 
@@ -91,7 +94,7 @@ const loader = new THREE.FBXLoader();
 const audioLoader = new THREE.AudioLoader();
 const listener = new THREE.AudioListener();
 
-let WALL, OUTERWALL, BLOCK, BOMB, GROUND, FIRE 
+let WALL, OUTERWALL, BLOCK, BOMB, GROUND, FIRE
 let FLOOR01, FLOOR02;
 let CHR;
 let SPEEDUP, BOMBUP, FIREUP, PUNCH, KICK, HOLD;
@@ -122,21 +125,21 @@ socket.on("set_value", (tl, hl, wl) => {
 
     FIELD = new Array(THICKNESS_LENGTH);
     for (let h = 0; h < THICKNESS_LENGTH; h++) {
-        FIELD[h] = new Array(HEIGHT_LENGTH);       
-        for(let i = 0; i < HEIGHT_LENGTH; i++){
+        FIELD[h] = new Array(HEIGHT_LENGTH);
+        for (let i = 0; i < HEIGHT_LENGTH; i++) {
             FIELD[h][i] = new Array(WIDTH_LENGTH).fill(0);
         }
     }
 
     FIELD_NUM = new Array(THICKNESS_LENGTH);
     for (let h = 0; h < THICKNESS_LENGTH; h++) {
-        FIELD_NUM[h] = new Array(HEIGHT_LENGTH);       
-        for(let i = 0; i < HEIGHT_LENGTH; i++){
+        FIELD_NUM[h] = new Array(HEIGHT_LENGTH);
+        for (let i = 0; i < HEIGHT_LENGTH; i++) {
             FIELD_NUM[h][i] = new Array(WIDTH_LENGTH).fill(0);
         }
     }
 
-    cameraPosX = Math.floor(WIDTH_LENGTH/2)*SIZE_WALL;
+    cameraPosX = Math.floor(WIDTH_LENGTH / 2) * SIZE_WALL;
     set_cameraPos();
 });
 
@@ -151,15 +154,15 @@ window.addEventListener("keyup", keyup);
 function onResize() {
     if (renderer != null) {
         renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(window.innerWidth, window.innerHeight);        
+        renderer.setSize(window.innerWidth, window.innerHeight);
     } else {
         console.log("renderer is null");
     }
 
     if (camera != null) {
         camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();       
-    }else {
+        camera.updateProjectionMatrix();
+    } else {
         console.log("renderer is null");
     }
 }
@@ -170,27 +173,27 @@ function loadObj(path) {
             fbx.traverse((node) => node.castShadow = node.receiveShadow = true);
             resolve(fbx);
         });
-    });    
+    });
 }
 
 async function loadObjs() {
-    WALL =      await loadObj("assets/objs_ver1.0/wall1.fbx");  
-    OUTERWALL = await loadObj("assets/objs_ver1.0/outerWall.fbx");    
-    BLOCK =     await loadObj("assets/objs_ver1.0/block.fbx");    
-    BOMB =      await loadObj("assets/objs_ver1.0/bomb2.fbx"); 
-    GROUND =    await loadObj("assets/objs_ver1.0/ground1.fbx");
-    FIRE =      await loadObj("assets/objs_ver1.0/fire.fbx");   
-    FLOOR01 =   await loadObj("assets/objs_ver1.0/floor03.fbx"); 
-    FLOOR02 =   await loadObj("assets/objs_ver1.0/floor02.fbx"); 
-    CHR =       await loadObj("assets/objs_ver1.0/01-2.fbx");            
+    WALL = await loadObj("assets/objs_ver1.0/wall1.fbx");
+    OUTERWALL = await loadObj("assets/objs_ver1.0/outerWall.fbx");
+    BLOCK = await loadObj("assets/objs_ver1.0/block.fbx");
+    BOMB = await loadObj("assets/objs_ver1.0/bomb2.fbx");
+    GROUND = await loadObj("assets/objs_ver1.0/ground1.fbx");
+    FIRE = await loadObj("assets/objs_ver1.0/fire.fbx");
+    FLOOR01 = await loadObj("assets/objs_ver1.0/floor03.fbx");
+    FLOOR02 = await loadObj("assets/objs_ver1.0/floor02.fbx");
+    CHR = await loadObj("assets/objs_ver1.0/01-2.fbx");
 
     //items
-    SPEEDUP =   await loadObj("assets/objs_ver1.0/speedUp.fbx");
-    BOMBUP =    await loadObj("assets/objs_ver1.0/bombUp.fbx");
-    FIREUP =    await loadObj("assets/objs_ver1.0/fireUp.fbx");
-    PUNCH =     await loadObj("assets/objs_ver1.0/punch.fbx");
-    KICK =      await loadObj("assets/objs_ver1.0/kick.fbx");
-    HOLD =      await loadObj("assets/objs_ver1.0/hold.fbx");
+    SPEEDUP = await loadObj("assets/objs_ver1.0/speedUp.fbx");
+    BOMBUP = await loadObj("assets/objs_ver1.0/bombUp.fbx");
+    FIREUP = await loadObj("assets/objs_ver1.0/fireUp.fbx");
+    PUNCH = await loadObj("assets/objs_ver1.0/punch.fbx");
+    KICK = await loadObj("assets/objs_ver1.0/kick.fbx");
+    HOLD = await loadObj("assets/objs_ver1.0/hold.fbx");
 
     ITEMs = [HOLD, KICK, PUNCH, FIREUP, BOMBUP, SPEEDUP];
 
@@ -215,10 +218,10 @@ function loadAudio(path, vol, is_loop) {
 }
 
 async function loadAudios() {
-    FIRE_SE =   await loadAudio("assets/SE/爆発3.mp3", 0.5, false);
-    ITEM_SE =   await loadAudio("assets/SE/パワーアップ.mp3", 0.5, false);
-    DEAD_SE =   await loadAudio("assets/SE/K.O..mp3", 0.5, false);
-    BGM01 =     await loadAudio("assets/BGM/BGM02.wav", bgm_vol, true);
+    FIRE_SE = await loadAudio("assets/SE/爆発3.mp3", 0.5, false);
+    ITEM_SE = await loadAudio("assets/SE/パワーアップ.mp3", 0.5, false);
+    DEAD_SE = await loadAudio("assets/SE/K.O..mp3", 0.5, false);
+    BGM01 = await loadAudio("assets/BGM/BGM02.wav", bgm_vol, true);
 
     SEs = [FIRE_SE, ITEM_SE, DEAD_SE];
 
@@ -242,7 +245,7 @@ function setup() {
                 BGM01.play();
             } else if (BGM01.isPlaying) {
                 BGM01.stop();
-            }         
+            }
         }
     });
 
@@ -277,49 +280,49 @@ function init() {
 
     //////Camera//////
     camera = new THREE.PerspectiveCamera(
-        45, 1, 1000, cameraDistance*3 //画角、アスペクト比、描画開始距離、描画終了距離
+        45, 1, 1000, cameraDistance * 3 //画角、アスペクト比、描画開始距離、描画終了距離
     );
     camera.rotation.x -= cameraAngleX;
     //audiolistenerをカメラの子にする
     camera.add(listener);
-    
+
     //////Effekseer//////
     context = effekseer.createContext();
     context.init(renderer.getContext());
     FIRE_EFFECT = context.loadEffect(
-        "assets/effects_ver1.0/exp2.efk", 
+        "assets/effects_ver1.0/exp2.efk",
         12.0, () => {
-    });
+        });
 
     DEAD_EFFECT = context.loadEffect(
-        "assets/effects_ver1.0/dead2.efk", 
+        "assets/effects_ver1.0/dead2.efk",
         20, () => {
-    });
+        });
 
     ITEM_EFFECT = context.loadEffect(
         "assets/effects_ver1.0/item.efk",
         50, () => {
-    });
+        });
 
     //////Light//////
     const dirLight = new THREE.DirectionalLight(0xffffff, dirLightIntensity);
 
     dirLight.position.set(
         Math.floor(WIDTH_LENGTH / 2) * SIZE_WALL - 1500,
-        1500, 
+        1500,
         -Math.floor(HEIGHT_LENGTH / 2) * SIZE_WALL
-    );    
+    );
     dirLight.target.position.set(
         Math.floor(WIDTH_LENGTH / 2) * SIZE_WALL,
-        0, 
+        0,
         -Math.floor(HEIGHT_LENGTH / 2) * SIZE_WALL + 200
     )
 
     dirLight.castShadow = true;
-    dirLight.shadow.camera.left = -SIZE_WALL*WIDTH_LENGTH/1.5
-    dirLight.shadow.camera.right = SIZE_WALL*WIDTH_LENGTH/1.5
-    dirLight.shadow.camera.top = SIZE_WALL*HEIGHT_LENGTH/1.5
-    dirLight.shadow.camera.bottom = -SIZE_WALL*HEIGHT_LENGTH/1.5
+    dirLight.shadow.camera.left = -SIZE_WALL * WIDTH_LENGTH / 1.5
+    dirLight.shadow.camera.right = SIZE_WALL * WIDTH_LENGTH / 1.5
+    dirLight.shadow.camera.top = SIZE_WALL * HEIGHT_LENGTH / 1.5
+    dirLight.shadow.camera.bottom = -SIZE_WALL * HEIGHT_LENGTH / 1.5
     dirLight.shadow.camera.near = 1;
     dirLight.shadow.camera.far = 5000;
 
@@ -329,15 +332,15 @@ function init() {
 
     const ambLight = new THREE.AmbientLight(0xffffff, 0.8);
     scene.add(ambLight);
-    
+
     //////Ground//////
     scene.add(GROUND);
     GROUND.position.set(
         Math.floor(WIDTH_LENGTH / 2) * SIZE_WALL,
-        -30, 
+        -30,
         -Math.floor(HEIGHT_LENGTH / 2) * SIZE_WALL
     );
-    GROUND.scale.set(16,16,16);
+    GROUND.scale.set(16, 16, 16);
 
     //////Listeners//////
     socket.on("field", (field) => {
@@ -351,53 +354,53 @@ function init() {
                         //前と違うならオブジェクトを削除し、以下のSwitchで新しくオブジェクトを追加
                         let is_item = false;
                         if (pnum < 0) is_item = true;
-                        remove_obj(h,i,j, is_item); //アイテムとったよっていうイベントをサーバーから受け取ってもいいかも。
-                            
+                        remove_obj(h, i, j, is_item); //アイテムとったよっていうイベントをサーバーから受け取ってもいいかも。
+
                         //////Objects//////
                         switch (num) {
                             case OUTERWALL_NUM:
                                 FIELD[h][i][j] = add_obj(h, i, j, OUTERWALL); break;
-                        
+
                             case WALL_NUM:
                                 FIELD[h][i][j] = add_obj(h, i, j, WALL); break;
 
                             case BLOCK_NUM:
                                 FIELD[h][i][j] = add_obj(h, i, j, BLOCK); break;
-                        
+
                             case BOMB_NUM:
                             case BOMB_PUNCHED_NUM:
                                 FIELD[h][i][j] = add_obj(h, i, j, BOMB); break;
-                            
+
                             case FLOOR01_NUM:
                                 FIELD[h][i][j] = add_obj(h, i, j, FLOOR01); break;
-        
+
                             case FLOOR02_NUM:
                                 FIELD[h][i][j] = add_obj(h, i, j, FLOOR02); break;
-                            
-                            default: 
-                            //  負の値はアイテム。defaultが呼ばれるのは負の時だけなはずだが、一応条件分岐。
+
+                            default:
+                                //  負の値はアイテム。defaultが呼ばれるのは負の時だけなはずだが、一応条件分岐。
                                 if (num < 0) {
                                     is_item = true
-                                    FIELD[h][i][j] = add_obj(h, i, j, ITEMs[ITEM_NUM+num], is_item); break;
+                                    FIELD[h][i][j] = add_obj(h, i, j, ITEMs[ITEM_NUM + num], is_item); break;
                                 }
                         }
-                    } 
+                    }
                 }
-            }     
+            }
         }
         FIELD_NUM = field.slice();
     });
 
-    socket.on("move-bomb", (tindex, index, id, is_stopped=false, is_kick=false) => {
+    socket.on("move-bomb", (tindex, index, id, is_stopped = false, is_kick = false) => {
         if (moving_bombs[id] == undefined) {
-            const {h,i,j} = tindex;
+            const {h, i, j} = tindex;
             moving_bombs[id] = add_obj(h, i, j, BOMB);
             remove_obj(h, i, j);
         }
         if (is_stopped) {
             remove_moving_bomb(id, is_kick);
         } else {
-            set_obj(moving_bombs[id], index);  
+            set_obj(moving_bombs[id], index);
         }
     });
 
@@ -431,15 +434,15 @@ function init() {
         chrsInfo = chrs
         chrsInfo[socket.id] = Object.assign({}, myChrInfo);
 
-        for (const id in chrsInfo){
+        for (const id in chrsInfo) {
             const {pos, status, angle} = chrsInfo[id];
             if (animActs[id] != undefined) {
                 switch (status) {
                     case "idle":
                     case "wait":
                         play_anim(id, "idle"); break;
-                    
-                    case "walk": 
+
+                    case "walk":
                         play_anim(id, "walk"); break;
 
                     case "bomb-hold":
@@ -451,21 +454,21 @@ function init() {
 
                     case "stan":
                         play_anim(id, "stan"); break;
-                        
+
                     case "dead":
                         if (is_alive[id]) {
-                            Object.keys(animActs[id]).forEach(actKey => { animActs[id][actKey].stop(); });
-                            is_alive[id] = false;     
-                            play_SE(DEAD_SE);           
-                        } 
-                        context.play(DEAD_EFFECT, pos.x, pos.y, pos.z);    
+                            Object.keys(animActs[id]).forEach(actKey => {animActs[id][actKey].stop();});
+                            is_alive[id] = false;
+                            play_SE(DEAD_SE);
+                        }
+                        context.play(DEAD_EFFECT, pos.x, pos.y, pos.z);
                         break;
-                }                
+                }
             }
-            
+
             if (chrsObj[id] != undefined) {
                 chrsObj[id].position.set(pos.x, pos.y, pos.z);
-                chrsObj[id].rotation.set(0, angle, 0);        
+                chrsObj[id].rotation.set(0, angle, 0);
             }
         }
     });
@@ -489,17 +492,17 @@ function init() {
         BGM01.setPlaybackRate(1);
         context.stopAll();
 
-        for (const id in chrsInfo){
+        for (const id in chrsInfo) {
             chrsObj[id] = SkeletonUtils.clone(CHR);
             animMixers[id] = new THREE.AnimationMixer(chrsObj[id]);
             is_alive[id] = true;
-            
+
             let stanAct = animMixers[id].clipAction(CHR.animations[1])
             let idleAct = animMixers[id].clipAction(CHR.animations[5]);
             let idleAct2 = animMixers[id].clipAction(CHR.animations[4]);
             let walkAct = animMixers[id].clipAction(CHR.animations[2]);
             let walkAct2 = animMixers[id].clipAction(CHR.animations[0]);
-            
+
             animActs[id] = {
                 "stan": stanAct,
                 "idle": idleAct,
@@ -540,7 +543,7 @@ function init() {
     /////////////////////////////////////////////////////////
     (function tick() {
         requestAnimationFrame(tick);
-        
+
         let frameTime = clock.getDelta();
 
         for (const id in animMixers) {
@@ -572,7 +575,7 @@ function init() {
 
         context.update(frameTime * 60.0);
         context.draw();
-    
+
     })();
     //////////////////////////////////////////////////////////
 }
@@ -604,8 +607,8 @@ function move_chrs(frameTime) {
      *    --生きている状態
      */
     if (status == "dead") {
-        if (pos.y < cameraDistance*3){
-            pos.add((dir.clone()).multiplyScalar(delta*3));
+        if (pos.y < cameraDistance * 3) {
+            pos.add((dir.clone()).multiplyScalar(delta * 3));
         } else {
             myChrInfo.status = "wait";
             myChrInfo.angle = Math.PI;
@@ -616,7 +619,7 @@ function move_chrs(frameTime) {
 
     } else if (get_is_hit_fire(index)) {
         statsDisplay.innerHTML = deadMessage;
-        
+
         if (status == "bomb-hold" || status == "bomb-hold-walk") {
             socket.emit("bomb-throw", get_angle2dir(angle));
         }
@@ -635,27 +638,27 @@ function move_chrs(frameTime) {
             }
         }, stanTime);
 
-    } else if (can_move) {        
+    } else if (can_move) {
         //キー入力から進む向きをベクトルで出す。
         get_direction(dir);
-    
+
         //////Move//////
         if (status == "wait" || status == "bomb-hold-wait") {
-            if (!dir.equals(new THREE.Vector3())){
+            if (!dir.equals(new THREE.Vector3())) {
                 dir.normalize();
                 if (get_is_touch_outerWall(pos, dir)) {
                     pos.add((dir.clone()).multiplyScalar(delta));
                 }
                 //移動後のインデックスを取得。インデックスによって向きを変化。
-                const { i, j } = get_index(pos);
+                const {i, j} = get_index(pos);
                 let _angle = 0;
 
-                if (i==HEIGHT_LENGTH-1) _angle = 0;
-                else if (j==0) _angle = Math.PI/2;
-                else if (i==0) _angle = Math.PI;
-                else if (j==WIDTH_LENGTH-1) _angle = Math.PI/2*3; 
+                if (i == HEIGHT_LENGTH - 1) _angle = 0;
+                else if (j == 0) _angle = Math.PI / 2;
+                else if (i == 0) _angle = Math.PI;
+                else if (j == WIDTH_LENGTH - 1) _angle = Math.PI / 2 * 3;
 
-                myChrInfo.angle=_angle;
+                myChrInfo.angle = _angle;
             }
 
             //status change
@@ -663,7 +666,7 @@ function move_chrs(frameTime) {
                 index = get_index(pos);
                 const {h, i, j} = index;
                 if (FIELD_NUM[h][i][j] != BOMB_NUM) {
-                    
+
                     myChrInfo.status = "bomb-hold-wait";
                     socket.emit("bomb", index);
                     setTimeout(() => {
@@ -678,8 +681,7 @@ function move_chrs(frameTime) {
                     index = get_index(pos);
                     const {h, i, j} = index;
                     if (0 < i && i < HEIGHT_LENGTH - 1 ||
-                        0 < j && j < WIDTH_LENGTH - 1) 
-                    {
+                        0 < j && j < WIDTH_LENGTH - 1) {
                         socket.emit("bomb-throw", get_angle2dir(angle), 3);
                         myChrInfo.status = "wait";
                         placed_bombNum++;
@@ -689,13 +691,13 @@ function move_chrs(frameTime) {
                     }
                 }
             }
-                    
+
         } else if (status == "bomb-hold" || status == "bomb-hold-walk") {
             myChrInfo.status = "bomb-hold";
-            
-            if (!dir.equals(new THREE.Vector3())){
+
+            if (!dir.equals(new THREE.Vector3())) {
                 myChrInfo.status = "bomb-hold-walk";
-    
+
                 //////Set Char's Angle//////
                 myChrInfo.angle = get_dir2angle(dir);
                 //////Set Char's Position//////
@@ -708,10 +710,10 @@ function move_chrs(frameTime) {
             index = get_index(pos);
             const {h, i, j} = index;
             const num = FIELD_NUM[h][i][j];
-            
+
             //////Num Chack//////
             num_check(num, index);
-            
+
             if (is_keyon[KEY_CODE.SPACE]) {
                 myChrInfo.status = "idle";
                 socket.emit("bomb-throw", get_angle2dir(angle));
@@ -721,9 +723,9 @@ function move_chrs(frameTime) {
         } else {
             myChrInfo.status = "idle";
 
-            if (!dir.equals(new THREE.Vector3())){
+            if (!dir.equals(new THREE.Vector3())) {
                 myChrInfo.status = "walk";
-    
+
                 //////Set Char's Angle//////
                 myChrInfo.angle = get_dir2angle(dir);
                 //////Set Char's Position//////
@@ -732,20 +734,20 @@ function move_chrs(frameTime) {
                     pos.add((dir.clone()).multiplyScalar(delta));
                 }
             }
-             
+
             index = get_index(pos);
             const {h, i, j} = index;
             const num = FIELD_NUM[h][i][j];
-    
+
             //////Num Chack//////
             num_check(num, index);
-        
+
             //////Bomb//////
             if (is_keyon[KEY_CODE.SPACE]) {
                 if (num != BOMB_NUM &&
                     num != BOMB_KICKED_NUM &&
                     placed_bombNum < myChrInfo.bombNum
-                ){
+                ) {
                     socket.emit("bomb", index);
                     placed_bombNum++;
                     setTimeout(() => {
@@ -756,43 +758,43 @@ function move_chrs(frameTime) {
 
             if (is_keyon[KEY_CODE.k]) {
                 is_keyon[KEY_CODE.k] = false;
-                if (can_kick) {   
+                if (can_kick) {
                     const tindex = get_tindex(pos, dir, SIZE_CHR);
                     const {h, i, j} = tindex;
                     const tnum = FIELD_NUM[h][i][j];
-                    
+
                     if (tnum == BOMB_NUM || tnum == BOMB_PUNCHED_NUM) {
                         //斜めじゃない時。
-                        if (Math.abs(dir.x)==1||Math.abs(dir.y)==1||Math.abs(dir.z)==1) {
+                        if (Math.abs(dir.x) == 1 || Math.abs(dir.y) == 1 || Math.abs(dir.z) == 1) {
                             //蹴ってもすぐ止まらないときにイベントを送る。サーバーの負担軽減や、無駄なオブジェクトの削除追加をしないため。
                             if (FIELD_NUM[h][i - dir.z][j + dir.x] <= 0) {
                                 let bombID = FIELD[h][i][j].uuid;
                                 socket.emit("bomb-kick", tindex, dir, bombID);
-                                kicking_bomb_ids.push(bombID);                          
+                                kicking_bomb_ids.push(bombID);
                             }
                         }
-                    } 
+                    }
                 }
 
             } else if (is_keyon[KEY_CODE.l]) {
                 if (kicking_bomb_ids.length > 0) {
                     socket.emit("bomb-stop", kicking_bomb_ids.shift());
                 } is_keyon[KEY_CODE.l] = false;
-            
+
             } else if (is_keyon[KEY_CODE.j]) {
                 is_keyon[KEY_CODE.j] = false;
                 if (can_punch) {
                     const tindex = get_tindex(pos, dir, SIZE_CHR);
                     const {h, i, j} = tindex;
                     const tnum = FIELD_NUM[h][i][j];
-                    
+
                     if (tnum == BOMB_NUM || tnum == BOMB_PUNCHED_NUM) {
                         //斜めじゃない時。
-                        if (Math.abs(dir.x)==1||Math.abs(dir.y)==1||Math.abs(dir.z)==1) {
+                        if (Math.abs(dir.x) == 1 || Math.abs(dir.y) == 1 || Math.abs(dir.z) == 1) {
                             socket.emit("bomb-punch", tindex, dir, FIELD[h][i][j].uuid);
                         }
                     }
-                } 
+                }
 
             } else if (is_keyon[KEY_CODE.h]) {
                 is_keyon[KEY_CODE.h] = false;
@@ -801,10 +803,10 @@ function move_chrs(frameTime) {
                         socket.emit("bomb-hold", index);
                         myChrInfo.status = "bomb-hold";
                     }
-                } 
+                }
             }
         }
-    } 
+    }
 
     if (is_send) socket.emit("chr-info", myChrInfo);
 }
@@ -816,13 +818,13 @@ function move_camera() {
     for (const id of Object.keys(chrsObj)) {
         if (chrsInfo[id].status != "dead") {
             pos = chrsObj[id].position;
-            targetX += pos.x; 
+            targetX += pos.x;
             targetZ += pos.z;
             num++;
         }
     }
-    if (num != 0){
-        targetX /= num; 
+    if (num != 0) {
+        targetX /= num;
         targetZ /= num;
 
         let tpos = new THREE.Vector3(targetX, 0, targetZ);
@@ -837,15 +839,15 @@ function move_camera() {
 }
 
 function set_obj(obj, index) {
-    let pos = get_coord(index); 
+    let pos = get_coord(index);
     obj.position.set(pos.x, pos.y, pos.z);
 }
 
 function get_index(chr_pos) {
     return {
-        h : Math.floor((chr_pos.y + SIZE_WALL) / SIZE_WALL),
-        i : Math.floor((-chr_pos.z + SIZE_WALL/2) / SIZE_WALL),
-        j : Math.floor((chr_pos.x + SIZE_WALL/2) / SIZE_WALL) 
+        h: Math.floor((chr_pos.y + SIZE_WALL) / SIZE_WALL),
+        i: Math.floor((-chr_pos.z + SIZE_WALL / 2) / SIZE_WALL),
+        j: Math.floor((chr_pos.x + SIZE_WALL / 2) / SIZE_WALL)
     };
 }
 
@@ -856,50 +858,50 @@ function get_tindex(pos, dir, size) {
 
 function get_coord(index) {
     return {
-        x : index.j*SIZE_WALL,
-        y : (index.h - 1)*SIZE_WALL,
-        z : -index.i*SIZE_WALL
+        x: index.j * SIZE_WALL,
+        y: (index.h - 1) * SIZE_WALL,
+        z: -index.i * SIZE_WALL
     }
 }
 
 function get_direction(dir) {
-    dir.set(0,0,0);
+    dir.set(0, 0, 0);
 
-    if (is_keyon[KEY_CODE.w]) { 
+    if (is_keyon[KEY_CODE.w]) {
         dir.add(new THREE.Vector3(0, 0, -1));
-    } 
-    if (is_keyon[KEY_CODE.a]) { 
+    }
+    if (is_keyon[KEY_CODE.a]) {
         dir.add(new THREE.Vector3(-1, 0, 0));
-    } 
-    if (is_keyon[KEY_CODE.s]) { 
+    }
+    if (is_keyon[KEY_CODE.s]) {
         dir.add(new THREE.Vector3(0, 0, 1));
-    } 
-    if (is_keyon[KEY_CODE.d]) { 
+    }
+    if (is_keyon[KEY_CODE.d]) {
         dir.add(new THREE.Vector3(1, 0, 0));
     }
-}    
+}
 
 function get_dir2angle(dir) {
     let angle = new THREE.Vector3(0, 0, 1).angleTo(dir);
     //angleToの性質上、小さい角度が返り値なので、以下の処理をする。
-    if (dir.x < 0) angle = 2*Math.PI - angle;
+    if (dir.x < 0) angle = 2 * Math.PI - angle;
 
     return angle;
 }
 
-function get_angle2dir(angle){
+function get_angle2dir(angle) {
     let dir = new THREE.Vector3();
 
-    if (angle == Math.PI) { 
+    if (angle == Math.PI) {
         dir.add(new THREE.Vector3(0, 0, -1));
-    } 
-    if (angle == Math.PI/2*3) { 
+    }
+    if (angle == Math.PI / 2 * 3) {
         dir.add(new THREE.Vector3(-1, 0, 0));
-    } 
-    if (angle == 0) { 
+    }
+    if (angle == 0) {
         dir.add(new THREE.Vector3(0, 0, 1));
-    } 
-    if (angle == Math.PI/2) { 
+    }
+    if (angle == Math.PI / 2) {
         dir.add(new THREE.Vector3(1, 0, 0));
     }
 
@@ -908,11 +910,11 @@ function get_angle2dir(angle){
 
 function get_is_hit(pos, dir) {
     const index = get_index(pos);
-    const tindex = get_tindex(pos, dir, SIZE_CHR/2);
-    const {h,i,j} = tindex;
+    const tindex = get_tindex(pos, dir, SIZE_CHR / 2);
+    const {h, i, j} = tindex;
     let num = FIELD_NUM[h][i][j];
     if (!get_is_equal(tindex, index)) {
-        if (num > 0) return true;  
+        if (num > 0) return true;
     } return false;
 }
 
@@ -923,10 +925,10 @@ function get_is_hit_fire(index) {
 }
 
 function get_is_touch_outerWall(pos, dir) {
-    const tindex = get_tindex(pos, dir, SIZE_CHR/2);
-    const {h,i,j} = tindex;
+    const tindex = get_tindex(pos, dir, SIZE_CHR / 2);
+    const {h, i, j} = tindex;
     if (i >= 0 && j >= 0 && i < HEIGHT_LENGTH && j < WIDTH_LENGTH) {
-        if (FIELD_NUM[h - 1][i][j]==OUTERWALL_NUM) {
+        if (FIELD_NUM[h - 1][i][j] == OUTERWALL_NUM) {
             return true;
         }
     } return false;
@@ -941,8 +943,8 @@ function get_is_equal(index1, index2) {
 }
 
 function set_cameraPos() {
-    cameraPosY = cameraDistance*Math.sin(cameraAngleX);
-    cameraPosZ = cameraDistance*Math.cos(cameraAngleX) + 2*SIZE_WALL;
+    cameraPosY = cameraDistance * Math.sin(cameraAngleX);
+    cameraPosZ = cameraDistance * Math.cos(cameraAngleX) + 2 * SIZE_WALL;
 }
 
 function num_check(num, index) {
@@ -953,7 +955,7 @@ function num_check(num, index) {
         if (!got_item) {
             switch (num) {
                 case ITEM_SPEEDUP_NUM:
-                    if (myChrInfo.speed < SPEED_MAX)     
+                    if (myChrInfo.speed < SPEED_MAX)
                         myChrInfo.speed += 80; break;
                 case ITEM_BOMBUP_NUM:
                     if (myChrInfo.bombNum < BOMBNUM_MAX)
@@ -967,17 +969,17 @@ function num_check(num, index) {
                     myChrInfo.can_kick = true; break;
                 case ITEM_HOLD:
                     myChrInfo.can_hold = true; break;
-                
-                    default: console.log("error in move_chr item", num); break;
+
+                default: console.log("error in move_chr item", num); break;
             }
             console.log("got");
             got_item = true;
             setTimeout(() => {
                 got_item = false;
-            }, 200);                    
+            }, 200);
         }
 
-    //////Touch Moving Bomb//////
+        //////Touch Moving Bomb//////
     } else if (num == BOMB_KICKED_NUM || num == BOMB_PUNCHED_NUM) {
         myChrInfo.status = "stan";
     }
@@ -988,18 +990,18 @@ function num_check(num, index) {
 function add_obj(h, i, j, obj, is_item = false) {
     let _obj = SkeletonUtils.clone(obj);
     scene.add(_obj);
-    
+
     //アニメーションがあるならアニメーションを設定
     if (obj.animations.length > 0) {
         let id = _obj.uuid;
         animMixers[id] = new THREE.AnimationMixer(_obj);
         animMixers[id].clipAction(obj.animations[0]).play();
     }
-    set_obj(_obj, toIndex(h,i,j));
-    
+    set_obj(_obj, toIndex(h, i, j));
+
     //アイテムならエフェクトを再生
     if (is_item) {
-        play_EFK(ITEM_EFFECT, toIndex(h,i,j));
+        play_EFK(ITEM_EFFECT, toIndex(h, i, j));
     }
 
     return _obj;
@@ -1012,10 +1014,10 @@ function remove_obj(h, i, j, is_item = false) {
     delete animMixers[obj.uuid];
     FIELD[h][i][j] = 0;
 
-    if (is_item) play_SE(ITEM_SE); 
+    if (is_item) play_SE(ITEM_SE);
 }
 
-function remove_moving_bomb(id, is_kick=true) {
+function remove_moving_bomb(id, is_kick = true) {
     let obj = moving_bombs[id]
 
     if (is_kick) {
@@ -1023,7 +1025,7 @@ function remove_moving_bomb(id, is_kick=true) {
         delete animMixers[obj.uuid];
         if (index != -1) { //この条件分岐はいらないかも？
             kicking_bomb_ids.splice(index, 1);
-        }        
+        }
     }
 
     scene.remove(obj);
@@ -1045,13 +1047,13 @@ function play_EFK(efk, index) {
     context.play(efk, x, y, z);
 }
 
-function play_anim (id, act) {
-    Object.keys(animActs[id]).forEach(actKey => { if (actKey != act) animActs[id][actKey].stop(); });
+function play_anim(id, act) {
+    Object.keys(animActs[id]).forEach(actKey => {if (actKey != act) animActs[id][actKey].stop();});
     animActs[id][act].play();
 }
 
-function toIndex(h, i ,j) {
-    return {"h":h, "i":i, "j":j};
+function toIndex(h, i, j) {
+    return {"h": h, "i": i, "j": j};
 }
 
 function json2vec(json) {
