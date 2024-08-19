@@ -1,0 +1,11 @@
+# .prettierignore
+
+# node_modulesディレクトリを無視
+node_modules
+
+# distディレクトリを無視
+dist
+
+*.min.js
+
+client/lib

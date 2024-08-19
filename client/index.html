@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Bomber Man Clone</title>
+    <link href="./index.css" rel="stylesheet" />
+  </head>
+
+  <body>
+    <script src="lib/effekseer_asmjs.js"></script>
+    <script type="module" src="/main.ts"></script>
+
+    <div id="UI">
+      <div
+        id="titleCanvas"
+        class="flex flex-col justify-center items-center h-screen w-screen gap-8"
+      >
+        <h1 class="text-6xl font-bold">Bomber Man Clone</h1>
+        <input
+          class="btn-primary"
+          type="button"
+          id="startButton"
+          value="Start"
+        />
+      </div>
+      <div
+        id="roomCanvas"
+        class="hidden flex flex-col justify-center items-center h-screen w-screen gap-6"
+      >
+        <p id="playerCountLabel" class="text-3xl">0</p>
+        <input class="btn-primary" type="button" id="playButton" value="Play" />
+      </div>
+      <div
+        id="gameCanvas"
+        class="hidden flex flex-col h-screen w-screen gap-2 px-4"
+      >
+        <div class="flex flex-row gap-2">
+          <input type="checkbox" id="muteCheck" checked />
+          <label for="muteCheck">Mute</label>
+        </div>
+        <p>WASD: Move</p>
+        <p>Space: Bomb</p>
+        <p>K: Kick Bomb, if available</p>
+        <p>L: Stop Kicking Bomb,if available</p>
+        <!-- <p>P: Punch Bomb, if available</p> -->
+        <!-- <p>H: Hold Bomb, if available</p> -->
+      </div>
+    </div>
+  </body>
+</html>
