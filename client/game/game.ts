@@ -2,7 +2,7 @@ import { FieldController } from './controller/field_controller';
 import * as THREE from 'three';
 import { ControllablePlayer, PlayerState, RemotePlayer } from './player';
 import { InputManager } from './manager/input_manager';
-import { GameSocket } from './event';
+import { GameSocket } from '../event';
 import { newBomberManObject, UNIT } from './obj';
 import { convertDirectionToIndex, convertIndexToPosition } from './convert';
 import { BombController } from './controller/bomb_controller';

@@ -1,10 +1,11 @@
 import { io, Socket } from 'socket.io-client';
-import { Bomb, Field, FieldDiff, Index, PlayerData } from '../interface';
+import { Bomb, Field, FieldDiff, Index, PlayerData } from './interface';
 import { Vector3Like } from 'three';
-import { PlayerState } from './player';
+import { PlayerState } from './game/player';
 
 interface GameEventHandler {
   onPlayerCount?: (count: number) => void;
+  onErrorTooManyPlayers?: () => void;
   onField?: (data: Field) => void;
   onFieldDiffs?: (diffs: FieldDiff[]) => void;
   onExploded?: (bombIds: string[], diffs: FieldDiff[]) => void;
@@ -76,6 +77,10 @@ export class GameSocket {
     this.socket.on('got_item', (index) => {
       this.handlers.forEach((h) => h.onGotItem?.(index));
     });
+
+    this.socket.on('error_too_many_players', () => {
+      this.handlers.forEach((h) => h.onErrorTooManyPlayers?.());
+    });
   }
 
   get id(): string | undefined {
@@ -90,8 +95,8 @@ export class GameSocket {
     this.handlers = this.handlers.filter((h) => h !== handler);
   }
 
-  join() {
-    this.socket.emit('join');
+  join(room: string) {
+    this.socket.emit('join', room);
   }
 
   start() {

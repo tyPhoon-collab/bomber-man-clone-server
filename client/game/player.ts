@@ -3,7 +3,7 @@ import { convertPositionToIndex } from './convert';
 import { PLAYER_RADIUS, UNIT } from './obj';
 import { Game } from './game';
 import { randomId } from '../random';
-import { GameSocket } from './event';
+import { GameSocket } from '../event';
 import { BombState, equalIndex, Index } from '../interface';
 import { engine } from '../main';
 

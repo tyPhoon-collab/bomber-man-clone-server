@@ -12,18 +12,25 @@ import (
 var games = map[socket.Room]*Game{}
 
 func HandleGameEvent(io *socket.Server, client *socket.Socket) {
-	client.On("join", func(data ...any) {
-		client.Join("room")
-		client.SetData(domain.ClientPlayer{
-			// Name: data[0].(string), // TODO set name
-		})
+	var room socket.Room
 
-		io.To("room").FetchSockets()(func(rs []*socket.RemoteSocket, err error) {
+	client.On("join", func(data ...any) {
+		room = socket.Room((data[0].(string)))
+
+		io.To(room).FetchSockets()(func(rs []*socket.RemoteSocket, err error) {
 			if err != nil {
 				log.Fatalf("FetchSockets: %v", err)
 				return
 			}
-			io.To("room").Emit("player_count", len(rs))
+			if len(rs)+1 >= 4 {
+				client.Emit("error_too_many_players")
+			} else {
+				client.Join(room)
+				client.SetData(domain.ClientPlayer{
+					Name: fmt.Sprintf("Player %d", len(rs)+1),
+				})
+				io.To(room).Emit("player_count", len(rs)+1) // 暫定でプレイヤー数を送る
+			}
 		})
 	})
 
@@ -32,7 +39,7 @@ func HandleGameEvent(io *socket.Server, client *socket.Socket) {
 		// builder := field_builder.NewDebugFieldBuilder()
 		f := domain.NewField(builder, builder.Config())
 
-		io.In("room").FetchSockets()(func(rs []*socket.RemoteSocket, err error) {
+		io.In(room).FetchSockets()(func(rs []*socket.RemoteSocket, err error) {
 			if err != nil {
 				log.Fatalf("FetchSockets: %v", err)
 				return
@@ -51,22 +58,22 @@ func HandleGameEvent(io *socket.Server, client *socket.Socket) {
 				players[r.Id()] = data
 			}
 
-			if g := games["room"]; g != nil {
+			if g := games[room]; g != nil {
 				g.Dispose()
 			}
-			games["room"] = NewGame(f, players)
+			games[room] = NewGame(f, players)
 
-			io.To("room").Emit("field", f)
-			io.To("room").Emit("players", players)
+			io.To(room).Emit("field", f)
+			io.To(room).Emit("players", players)
 		})
 	})
 
 	client.On("move", func(data ...any) {
-		client.To("room").Emit("move", data)
+		client.To(room).Emit("move", data)
 	})
 
 	client.On("place_bomb", func(data ...any) {
-		g := games["room"]
+		g := games[room]
 		index := domain.NewIndexFromData(data[0])
 
 		fmt.Println("place_bomb", index)
@@ -76,21 +83,21 @@ func HandleGameEvent(io *socket.Server, client *socket.Socket) {
 			index,
 			PlaceBombEvent{
 				OnPlaced: func(bomb domain.Bomb) {
-					emitBomb(io.To("room"), bomb)
+					emitBomb(io.To(room), bomb)
 				},
 				OnExploded: func(bombs []*domain.Bomb, diffs []domain.FieldDiff) {
 					bombIds := make([]domain.BombId, 0)
 					for _, b := range bombs {
 						bombIds = append(bombIds, b.Id())
 					}
-					io.To("room").Emit("explode", bombIds, diffs)
+					io.To(room).Emit("explode", bombIds, diffs)
 				},
 			},
 		)
 	})
 
 	client.On("kick_bomb", func(data ...any) {
-		g := games["room"]
+		g := games[room]
 		playerIndex := domain.NewIndexFromData(data[0])
 		dir := domain.NewIndexFromData(data[1])
 
@@ -100,46 +107,46 @@ func HandleGameEvent(io *socket.Server, client *socket.Socket) {
 			dir,
 			KickBombEvent{
 				OnStartedMove: func(bomb domain.Bomb) {
-					emitBomb(io.To("room"), bomb)
+					emitBomb(io.To(room), bomb)
 				},
 				OnMoved: func(bomb domain.Bomb) {
-					emitBomb(io.To("room"), bomb)
+					emitBomb(io.To(room), bomb)
 				},
 				OnStopped: func(bomb domain.Bomb) {
-					emitBomb(io.To("room"), bomb)
+					emitBomb(io.To(room), bomb)
 				},
 			},
 		)
 	})
 
 	client.On("stop_bomb", func(data ...any) {
-		g := games["room"]
+		g := games[room]
 
 		go g.StopBomb(client.Id())
 	})
 
 	client.On("position", func(data ...any) {
-		client.To("room").Emit("player_position", client.Id(), data[0])
+		client.To(room).Emit("player_position", client.Id(), data[0])
 	})
 
 	client.On("angle", func(data ...any) {
-		client.To("room").Emit("player_angle", client.Id(), data[0])
+		client.To(room).Emit("player_angle", client.Id(), data[0])
 	})
 
 	client.On("state", func(data ...any) {
-		client.To("room").Emit("player_state", client.Id(), data[0])
+		client.To(room).Emit("player_state", client.Id(), data[0])
 	})
 
 	client.On("get_item", func(data ...any) {
 		index := domain.NewIndexFromData(data[0])
-		g := games["room"]
+		g := games[room]
 
 		g.GetItem(client.Id(), index, GetItemEvent{
 			OnSpeedUp: func() {
 				client.Emit("speed_up")
 			},
 			OnGot: func() {
-				io.To("room").Emit("got_item", index)
+				io.To(room).Emit("got_item", index)
 			},
 		})
 	})

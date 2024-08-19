@@ -38,12 +38,14 @@ export class Room implements EngineContext {
       onPlayerCount: (count) => {
         this.uiManager.updatePlayerCount(count);
       },
+      onErrorTooManyPlayers: () => {
+        this.uiManager.failed();
+      },
       onField: (_) => {
-        // handle start. the data will be handled in Game
+        // To handle start. the data will be handled in Game
         engine.push(game);
       },
     });
-    socket.join();
 
     this.initialize();
   }

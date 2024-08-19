@@ -16,20 +16,36 @@
         class="flex flex-col justify-center items-center h-screen w-screen gap-8"
       >
         <h1 class="text-6xl font-bold">Bomber Man Clone</h1>
-        <input
-          class="btn-primary"
-          type="button"
-          id="startButton"
-          value="Start"
-        />
+        <button class="button-primary" id="startButton">Start</button>
       </div>
+
       <div
         id="roomCanvas"
         class="hidden flex flex-col justify-center items-center h-screen w-screen gap-6"
       >
-        <p id="playerCountLabel" class="text-3xl">0</p>
-        <input class="btn-primary" type="button" id="playButton" value="Play" />
+        <div id="joinContainer" class="flex flex-row gap-4 items-center">
+          <label for="roomNameInput">Room: </label>
+          <input
+            type="text"
+            id="roomNameInput"
+            class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+            placeholder="Room Name..."
+            value="debug"
+            required
+          />
+          <button class="button-primary" id="joinButton">Join</button>
+        </div>
+        <p id="statusLabel"></p>
+
+        <div
+          id="roomContainer"
+          class="hidden flex flex-col justify-center items-center"
+        >
+          <p id="playerCountLabel" class="text-3xl">0</p>
+          <button class="button-primary" id="playButton">Play</button>
+        </div>
       </div>
+
       <div
         id="gameCanvas"
         class="hidden flex flex-col h-screen w-screen gap-2 px-4"

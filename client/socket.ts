@@ -1,7 +1,7 @@
-import { GameSocket } from './game/event';
+import { GameSocket } from './event';
 
-// const ENDPOINT = 'http://localhost:8000';
-const ENDPOINT = 'https://bomber-man-pw7szx6oxa-an.a.run.app';
+const ENDPOINT = 'http://localhost:8000';
+// const ENDPOINT = 'https://bomber-man-pw7szx6oxa-an.a.run.app';
 
 let socket: GameSocket | null = null;
 
