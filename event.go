@@ -25,6 +25,7 @@ func HandleGameEvent(io *socket.Server, client *socket.Socket) {
 		// If game is playing, do not join
 		if g, ok := games[room]; ok && g.state != GameStateDisposed {
 			log.Printf("room %s is playing", room)
+			client.Emit("error_room_is_playing")
 			return
 		}
 
