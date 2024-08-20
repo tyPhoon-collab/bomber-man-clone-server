@@ -30,15 +30,6 @@ func (c *SimpleFieldBuilder) BuildFieldType(k, i, j int) domain.FieldType {
 	return domain.Empty
 }
 
-func (c *SimpleFieldBuilder) InitialSpawnIndexes() []domain.Index {
-	return []domain.Index{
-		{K: 1, I: 1, J: 1},
-		{K: 1, I: c.Height - 2, J: c.Width - 2},
-		{K: 1, I: 1, J: c.Width - 2},
-		{K: 1, I: c.Height - 2, J: 1},
-	}
-}
-
 func (c *SimpleFieldBuilder) Config() domain.FieldConfig {
 	return c.FieldConfig
 }

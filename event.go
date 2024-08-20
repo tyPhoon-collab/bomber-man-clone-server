@@ -14,6 +14,11 @@ var games = map[socket.Room]*Game{}
 func HandleGameEvent(io *socket.Server, client *socket.Socket) {
 	var room socket.Room
 
+	client.On("disconnect", func(...any) {
+		removePlayer(room, client.Id())
+		client.To(room).Emit("left_player", client.Id())
+	})
+
 	client.On("join", func(data ...any) {
 		room = socket.Room((data[0].(string)))
 
@@ -24,13 +29,27 @@ func HandleGameEvent(io *socket.Server, client *socket.Socket) {
 			}
 			if len(rs)+1 >= 4 {
 				client.Emit("error_too_many_players")
-			} else {
-				client.Join(room)
-				client.SetData(domain.ClientPlayer{
-					Name: fmt.Sprintf("Player %d", len(rs)+1),
-				})
-				io.To(room).Emit("player_count", len(rs)+1) // 暫定でプレイヤー数を送る
+				return
 			}
+
+			player := domain.ClientPlayer{
+				Index: uint(len(rs)),
+				Name:  fmt.Sprintf("Player %d", len(rs)+1),
+			}
+			io.To(room).Emit("joined_player", client.Id(), player)
+
+			client.Join(room)
+			client.SetData(player)
+
+			players := map[socket.SocketId]domain.ClientPlayer{
+				client.Id(): player,
+			}
+
+			for _, r := range rs {
+				players[r.Id()] = r.Data().(domain.ClientPlayer)
+			}
+
+			client.Emit("players", players)
 		})
 	})
 
@@ -40,16 +59,11 @@ func HandleGameEvent(io *socket.Server, client *socket.Socket) {
 				log.Fatalf("FetchSockets: %v", err)
 				return
 			}
+			removePlayer(room, client.Id())
 
-			g := games[room]
-
-			if g != nil {
-				g.RemovePlayer(client.Id())
-			}
-
+			client.To(room).Emit("left_player", client.Id())
 			client.Leave(room)
 			client.SetData(nil)
-			io.To(room).Emit("player_count", len(rs)-1) // 暫定でプレイヤー数を送る
 		})
 	})
 
@@ -63,27 +77,18 @@ func HandleGameEvent(io *socket.Server, client *socket.Socket) {
 				log.Fatalf("FetchSockets: %v", err)
 				return
 			}
-			indexes := builder.InitialSpawnIndexes()
 
-			if len(indexes) < len(rs) {
-				log.Fatalf("not enough initial indexes")
-			}
-
-			players := make(map[socket.SocketId]domain.ClientPlayer, len(rs))
-
-			for i, r := range rs {
-				data := r.Data().(domain.ClientPlayer)
-				data.InitIndex = indexes[i]
-				players[r.Id()] = data
+			ids := make([]socket.SocketId, 0)
+			for _, r := range rs {
+				ids = append(ids, r.Id())
 			}
 
 			if g := games[room]; g != nil {
 				g.Dispose()
 			}
-			games[room] = NewGame(f, players)
+			games[room] = NewGame(f, ids)
 
 			io.To(room).Emit("field", f)
-			io.To(room).Emit("players", players)
 		})
 	})
 
@@ -181,6 +186,13 @@ func HandleGameEvent(io *socket.Server, client *socket.Socket) {
 			},
 		})
 	})
+}
+
+func removePlayer(room socket.Room, id socket.SocketId) {
+	g := games[room]
+	if g != nil {
+		g.RemovePlayer(id)
+	}
 }
 
 func emitBomb(emitter *socket.BroadcastOperator, b domain.Bomb) {

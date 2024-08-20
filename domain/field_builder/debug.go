@@ -28,15 +28,6 @@ func (c *DebugFieldBuilder) BuildFieldType(k, i, j int) domain.FieldType {
 	return domain.Empty
 }
 
-func (c *DebugFieldBuilder) InitialSpawnIndexes() []domain.Index {
-	return []domain.Index{
-		{K: 1, I: 1, J: 1},
-		{K: 1, I: c.Height - 2, J: c.Width - 2},
-		{K: 1, I: 1, J: c.Width - 2},
-		{K: 1, I: c.Height - 2, J: 1},
-	}
-}
-
 func (c *DebugFieldBuilder) Config() domain.FieldConfig {
 	return c.FieldConfig
 }
@@ -48,6 +39,12 @@ func NewDebugFieldBuilder() domain.FieldBuilder {
 	config.Height = 7
 
 	config.BrickAppearRate = 0
+	config.InitialSpawnIndexes = []domain.Index{
+		{K: 1, I: 1, J: 1},
+		{K: 1, I: 5, J: 9},
+		{K: 1, I: 5, J: 1},
+		{K: 1, I: 1, J: 9},
+	}
 
 	return &DebugFieldBuilder{
 		config,

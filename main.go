@@ -50,10 +50,6 @@ func handle(io *socket.Server) {
 			log.Println("error:", err)
 		})
 
-		client.On("disconnect", func(...any) {
-			log.Println("disconnect:", client.Id())
-		})
-
 		HandleGameEvent(io, client)
 	})
 }

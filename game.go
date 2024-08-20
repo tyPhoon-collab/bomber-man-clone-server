@@ -22,10 +22,10 @@ type Game struct {
 	finished       bool
 }
 
-func NewGame(field *domain.Field, clientPlayers map[socket.SocketId]domain.ClientPlayer) *Game {
+func NewGame(field *domain.Field, ids []socket.SocketId) *Game {
 	players := make(map[socket.SocketId]*domain.Player)
 
-	for id := range clientPlayers {
+	for _, id := range ids {
 		players[id] = domain.NewPlayer()
 		// players[id] = domain.NewDebugPlayer()
 	}

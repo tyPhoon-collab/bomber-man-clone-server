@@ -16,6 +16,8 @@ type FieldConfig struct {
 	BrickAppearRate float32
 	ItemAppearRate  float32
 
+	InitialSpawnIndexes []Index `json:"initialSpawnIndexes"`
+
 	// per 1 unit
 	BombSpeed time.Duration `json:"bombSpeed"`
 }
@@ -60,13 +62,20 @@ func NewDefaultFieldConfig() FieldConfig {
 
 		BrickAppearRate: 0.8,
 		ItemAppearRate:  0.5,
-		BombSpeed:       time.Millisecond * 250,
+
+		InitialSpawnIndexes: []Index{
+			{K: 1, I: 1, J: 1},
+			{K: 1, I: 11, J: 17},
+			{K: 1, I: 11, J: 1},
+			{K: 1, I: 1, J: 17},
+		},
+
+		BombSpeed: time.Millisecond * 250,
 	}
 }
 
 type FieldBuilder interface {
 	BuildFieldType(k, i, j int) FieldType
-	InitialSpawnIndexes() []Index
 	Config() FieldConfig
 }
 

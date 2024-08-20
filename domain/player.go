@@ -69,8 +69,8 @@ func (p *Player) PeekKickingBomb() (BombId, bool) {
 }
 
 type ClientPlayer struct {
-	Name      string `json:"name"`
-	InitIndex Index  `json:"initIndex"`
+	Index uint   `json:"index"`
+	Name  string `json:"name"`
 }
 
 type Position struct {
