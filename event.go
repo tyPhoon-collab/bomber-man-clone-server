@@ -22,6 +22,12 @@ func HandleGameEvent(io *socket.Server, client *socket.Socket) {
 	client.On("join", func(data ...any) {
 		room = socket.Room((data[0].(string)))
 
+		// If game is playing, do not join
+		if g, ok := games[room]; ok && g.state != GameStateDisposed {
+			log.Printf("room %s is playing", room)
+			return
+		}
+
 		io.To(room).FetchSockets()(func(rs []*socket.RemoteSocket, err error) {
 			if err != nil {
 				log.Fatalf("FetchSockets: %v", err)
@@ -161,7 +167,7 @@ func HandleGameEvent(io *socket.Server, client *socket.Socket) {
 		state := data[0].(string)
 		if state == "Dead" {
 			g := games[room]
-			g.Dead(client.Id(), DeadEvent{
+			go g.Dead(client.Id(), DeadEvent{
 				OnFinish: func(winnerId socket.SocketId) {
 					io.To(room).Emit("finish", winnerId)
 				},

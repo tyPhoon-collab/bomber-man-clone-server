@@ -12,6 +12,14 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+type GameState = int
+
+const (
+	GameStatePlaying GameState = iota
+	GameStateFinished
+	GameStateDisposed
+)
+
 type Game struct {
 	Field   *domain.Field
 	Bombs   []*domain.Bomb
@@ -19,7 +27,7 @@ type Game struct {
 
 	bombMovingDone map[domain.BombId]chan bool
 	mu             sync.Mutex
-	finished       bool
+	state          GameState
 }
 
 func NewGame(field *domain.Field, ids []socket.SocketId) *Game {
@@ -36,6 +44,7 @@ func NewGame(field *domain.Field, ids []socket.SocketId) *Game {
 		players: players,
 
 		bombMovingDone: make(map[domain.BombId]chan bool),
+		state:          GameStatePlaying,
 	}
 }
 
@@ -47,6 +56,13 @@ func (g *Game) Dispose() {
 	for _, done := range g.bombMovingDone {
 		done <- true
 	}
+
+	g.state = GameStateDisposed
+	log.Println("Game disposed")
+}
+
+func (g *Game) GetState() GameState {
+	return g.state
 }
 
 type PlaceBombEvent struct {
@@ -164,7 +180,7 @@ func (g *Game) KickBomb(id socket.SocketId, playerIndex domain.Index, dir domain
 	moveInterval := time.Millisecond * 250
 	ticker := time.NewTicker(moveInterval)
 
-	done := g.newDone(bomb.Id())
+	done := g.addNewDone(bomb.Id())
 
 	bomb.State = domain.Moving
 	bomb.Dir = dir
@@ -231,7 +247,7 @@ func (g *Game) GetBomb(index domain.Index) *domain.Bomb {
 	return nil
 }
 
-func (g *Game) newDone(id domain.BombId) chan bool {
+func (g *Game) addNewDone(id domain.BombId) chan bool {
 	done := make(chan bool, 1)
 	g.bombMovingDone[id] = done
 	return done
@@ -277,35 +293,54 @@ func (g *Game) GetItem(id socket.SocketId, index domain.Index, event GetItemEven
 
 func (g *Game) RemovePlayer(id socket.SocketId) {
 	g.mu.Lock()
+	if g.players[id] == nil {
+		return
+	}
+
 	delete(g.players, id)
+	if len(g.players) == 0 {
+		g.Dispose()
+		g.state = GameStateDisposed
+	}
 	g.mu.Unlock()
 }
 
 type DeadEvent struct {
 	OnFinish     func(winnerId socket.SocketId)
 	OnFinishSolo func()
+	OnDraw       func()
 }
 
 // TODO Draw mode
 func (g *Game) Dead(id socket.SocketId, event DeadEvent) {
-	if g.finished {
+	if g.state != GameStatePlaying {
 		return
 	}
 
 	g.mu.Lock()
-	defer g.mu.Unlock()
-
 	g.players[id].Alive = false
+	g.mu.Unlock()
+
+	time.Sleep(time.Second * 3)
 
 	ids := g.alivePlayerIds()
 
 	if len(ids) == 1 {
-		g.finished = true
+		g.state = GameStateFinished
 		event.OnFinish(ids[0])
 	} else if len(ids) == 0 {
-		g.finished = true
-		event.OnFinishSolo()
+		g.state = GameStateFinished
+
+		if g.isSoloPlay() {
+			event.OnFinishSolo()
+		} else {
+			event.OnDraw()
+		}
 	}
+}
+
+func (g *Game) isSoloPlay() bool {
+	return len(g.players) == 1
 }
 
 func (g *Game) alivePlayerIds() []socket.SocketId {
