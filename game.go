@@ -15,10 +15,11 @@ import (
 type Game struct {
 	Field   *domain.Field
 	Bombs   []*domain.Bomb
-	Players map[socket.SocketId]*domain.Player
+	players map[socket.SocketId]*domain.Player
 
 	bombMovingDone map[domain.BombId]chan bool
 	mu             sync.Mutex
+	finished       bool
 }
 
 func NewGame(field *domain.Field, clientPlayers map[socket.SocketId]domain.ClientPlayer) *Game {
@@ -32,7 +33,7 @@ func NewGame(field *domain.Field, clientPlayers map[socket.SocketId]domain.Clien
 	return &Game{
 		Field:   field,
 		Bombs:   make([]*domain.Bomb, 0),
-		Players: players,
+		players: players,
 
 		bombMovingDone: make(map[domain.BombId]chan bool),
 	}
@@ -62,7 +63,7 @@ func (g *Game) PlaceBomb(id socket.SocketId, index domain.Index, event PlaceBomb
 		return
 	}
 
-	p := g.Players[id]
+	p := g.players[id]
 
 	if !p.CanPlaceBomb() {
 		return
@@ -136,7 +137,7 @@ type KickBombEvent struct {
 }
 
 func (g *Game) KickBomb(id socket.SocketId, playerIndex domain.Index, dir domain.Index, event KickBombEvent) {
-	p := g.Players[id]
+	p := g.players[id]
 
 	if !p.CanKick {
 		return
@@ -208,7 +209,7 @@ func (g *Game) KickBomb(id socket.SocketId, playerIndex domain.Index, dir domain
 }
 
 func (g *Game) StopBomb(id socket.SocketId) {
-	p := g.Players[id]
+	p := g.players[id]
 	if id, ok := p.PeekKickingBomb(); ok {
 		g.bombMovingDone[id] <- true
 	}
@@ -246,7 +247,7 @@ func (g *Game) GetItem(id socket.SocketId, index domain.Index, event GetItemEven
 		fmt.Printf("Already got item at %v\n", index)
 		return
 	}
-	p := g.Players[id]
+	p := g.players[id]
 
 	item := g.Field.Get(index)
 	switch item {
@@ -272,4 +273,50 @@ func (g *Game) GetItem(id socket.SocketId, index domain.Index, event GetItemEven
 	}
 	g.Field.Commit([]domain.FieldDiff{diff})
 	event.OnGot()
+}
+
+func (g *Game) RemovePlayer(id socket.SocketId) {
+	g.mu.Lock()
+	delete(g.players, id)
+	g.mu.Unlock()
+}
+
+type DeadEvent struct {
+	OnFinish     func(winnerId socket.SocketId)
+	OnFinishSolo func()
+}
+
+// TODO Draw mode
+func (g *Game) Dead(id socket.SocketId, event DeadEvent) {
+	if g.finished {
+		return
+	}
+
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	g.players[id].Alive = false
+
+	ids := g.alivePlayerIds()
+
+	if len(ids) == 1 {
+		g.finished = true
+		event.OnFinish(ids[0])
+	} else if len(ids) == 0 {
+		g.finished = true
+		event.OnFinishSolo()
+	}
+}
+
+func (g *Game) alivePlayerIds() []socket.SocketId {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	var ids []socket.SocketId
+
+	for id, p := range g.players {
+		if p.Alive {
+			ids = append(ids, id)
+		}
+	}
+	return ids
 }

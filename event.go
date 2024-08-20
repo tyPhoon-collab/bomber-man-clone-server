@@ -34,6 +34,25 @@ func HandleGameEvent(io *socket.Server, client *socket.Socket) {
 		})
 	})
 
+	client.On("leave", func(data ...any) {
+		io.To(room).FetchSockets()(func(rs []*socket.RemoteSocket, err error) {
+			if err != nil {
+				log.Fatalf("FetchSockets: %v", err)
+				return
+			}
+
+			g := games[room]
+
+			if g != nil {
+				g.RemovePlayer(client.Id())
+			}
+
+			client.Leave(room)
+			client.SetData(nil)
+			io.To(room).Emit("player_count", len(rs)-1) // 暫定でプレイヤー数を送る
+		})
+	})
+
 	client.On("start", func(data ...any) {
 		builder := field_builder.NewSimpleFieldConfig()
 		// builder := field_builder.NewDebugFieldBuilder()
@@ -134,7 +153,19 @@ func HandleGameEvent(io *socket.Server, client *socket.Socket) {
 	})
 
 	client.On("state", func(data ...any) {
-		client.To(room).Emit("player_state", client.Id(), data[0])
+		state := data[0].(string)
+		if state == "Dead" {
+			g := games[room]
+			g.Dead(client.Id(), DeadEvent{
+				OnFinish: func(winnerId socket.SocketId) {
+					io.To(room).Emit("finish", winnerId)
+				},
+				OnFinishSolo: func() {
+					io.To(room).Emit("finish_solo")
+				},
+			})
+		}
+		client.To(room).Emit("player_state", client.Id(), state)
 	})
 
 	client.On("get_item", func(data ...any) {

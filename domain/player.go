@@ -17,25 +17,29 @@ type Player struct {
 	// Speed            uint  // client side only
 
 	PlacedBombsCount uint
-	kickingBombs     []uuid.UUID
-	mu               sync.Mutex
+	Alive            bool
+
+	kickingBombs []uuid.UUID
+	mu           sync.Mutex
 }
 
 func NewPlayer() *Player {
 	return &Player{
 		Power:                 1,
 		MaxPlacableBombsCount: 1,
+
+		Alive: true,
 	}
 }
 
 func NewDebugPlayer() *Player {
-	return &Player{
-		Power:                 1,
-		MaxPlacableBombsCount: 10,
-		CanKick:               true,
-		CanPunch:              true,
-		CanHold:               true,
-	}
+	p := NewPlayer()
+	p.CanKick = true
+	p.CanPunch = true
+	p.CanHold = true
+	p.MaxPlacableBombsCount = 10
+
+	return p
 }
 
 func (p *Player) CanPlaceBomb() bool {
