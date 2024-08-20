@@ -2,46 +2,25 @@
 
 ## Tech Stack
 
-Server:
-Golang, Socket.IO
-
-Client:
-TypeScript, Socket.IO-Client, Three.js
+- Golang
+- Socket.IO
 
 ## Env
 
 ```bash
 $ go version
-go version go1.22.5 darwin/arm64
-
-$ node --version
-v20.10.0
-
-$ npx --version
-10.2.5
+go version go1.23.0 darwin/arm64
 ```
 
 ## Setup
 
 ```bash
-npm install
 go mod tidy
+go run .
 ```
-
-Two shells:
-
-- `cd client && npx vite`
-- `go run .`
-
-After that, access at `http://localhost:5137`
-
-## Hosting
-
-[Here](https://bomber-man.pages.dev/)
 
 ## Future Plans
 
-- Rooming
 - Restart
 - Punch
 - Hold
