@@ -175,6 +175,9 @@ func HandleGameEvent(io *socket.Server, client *socket.Socket) {
 				OnFinishSolo: func() {
 					io.To(room).Emit("finish_solo")
 				},
+				OnDraw: func() {
+					io.To(room).Emit("finish_draw")
+				},
 			})
 		}
 		client.To(room).Emit("player_state", client.Id(), state)
