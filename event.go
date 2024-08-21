@@ -5,6 +5,8 @@ import (
 	"bomber-man/domain/field_builder"
 	"fmt"
 	"log"
+	"sort"
+	"time"
 
 	"github.com/zishang520/socket.io/v2/socket"
 )
@@ -34,29 +36,30 @@ func HandleGameEvent(io *socket.Server, client *socket.Socket) {
 				log.Fatalf("FetchSockets: %v", err)
 				return
 			}
-			if len(rs)+1 >= 4 {
-				client.Emit("error_too_many_players")
+			if len(rs) >= 4 {
+				client.Emit("error_room_is_full")
 				return
 			}
 
 			player := domain.ClientPlayer{
-				Index: uint(len(rs)),
-				Name:  fmt.Sprintf("Player %d", len(rs)+1),
+				JoinedTime: time.Now(),
+				Id:         client.Id(),
+				Name:       fmt.Sprintf("Player %s", client.Id()),
 			}
-			io.To(room).Emit("joined_player", client.Id(), player)
+			io.To(room).Emit("joined_player", player)
 
 			client.Join(room)
 			client.SetData(player)
 
-			players := map[socket.SocketId]domain.ClientPlayer{
-				client.Id(): player,
-			}
+			players := []domain.ClientPlayer{player}
 
 			for _, r := range rs {
-				players[r.Id()] = r.Data().(domain.ClientPlayer)
+				players = append(players, r.Data().(domain.ClientPlayer))
 			}
 
-			client.Emit("players", players)
+			sortedPlayers := sortPlayers(players)
+
+			client.Emit("players", sortedPlayers)
 		})
 	})
 
@@ -207,4 +210,11 @@ func removePlayer(room socket.Room, id socket.SocketId) {
 
 func emitBomb(emitter *socket.BroadcastOperator, b domain.Bomb) {
 	emitter.Emit("bomb", b.Client())
+}
+
+func sortPlayers(players []domain.ClientPlayer) []domain.ClientPlayer {
+	sort.Slice(players, func(i, j int) bool {
+		return players[i].JoinedTime.Before(players[j].JoinedTime)
+	})
+	return players
 }

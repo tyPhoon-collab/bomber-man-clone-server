@@ -3,8 +3,10 @@ package domain
 import (
 	"slices"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/zishang520/socket.io/v2/socket"
 )
 
 type Player struct {
@@ -69,8 +71,9 @@ func (p *Player) PeekKickingBomb() (BombId, bool) {
 }
 
 type ClientPlayer struct {
-	Index uint   `json:"index"`
-	Name  string `json:"name"`
+	JoinedTime time.Time
+	Id         socket.SocketId `json:"id"`
+	Name       string          `json:"name"`
 }
 
 type Position struct {
