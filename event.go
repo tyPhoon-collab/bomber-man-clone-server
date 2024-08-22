@@ -110,8 +110,6 @@ func HandleGameEvent(io *socket.Server, client *socket.Socket) {
 		g := games[room]
 		index := domain.NewIndexFromData(data[0])
 
-		fmt.Println("place_bomb", index)
-
 		go g.PlaceBomb(
 			client.Id(),
 			index,
